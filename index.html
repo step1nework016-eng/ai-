@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 文案與腳本智能體</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* 全局設定與字體 */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --light-text-color: #666;
+            --border-color: #e9ecef;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.08 );
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* 主容器 */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            text-align: center;
+        }
+
+        .main-header h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .main-header p {
+            font-size: 1.2rem;
+            color: var(--light-text-color);
+            margin-bottom: 3rem;
+        }
+
+        /* 功能卡片網格 */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .action-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: left;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: var(--shadow);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .action-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(0, 123, 255, 0.15);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-card h3 {
+            font-size: 1.4rem;
+            margin: 0 0 0.5rem 0;
+            color: var(--text-color);
+        }
+
+        .action-card p {
+            font-size: 0.95rem;
+            color: var(--light-text-color);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* 結果顯示區 */
+        #result-container {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 2rem;
+            text-align: left;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.8s ease;
+        }
+
+        .result-section {
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 20px;
+        }
+        
+        /* 讓 AI 產生的 HTML 能正確顯示 */
+        .result-section h3 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        .result-section ul {
+            padding-left: 20px;
+            list-style-type: none;
+        }
+        .result-section li {
+            margin-bottom: 0.5rem;
+            line-height: 1.7;
+        }
+        .result-section strong {
+            color: #333;
+        }
+
+        /* 彈出視窗 (Modal) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .modal-overlay:not(.hidden) {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay:not(.hidden) .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .modal-content p {
+            color: var(--light-text-color);
+            margin-bottom: 20px;
+        }
+
+        #topic-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        #submit-topic {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #submit-topic:hover {
+            background-color: #0056b3;
+        }
+
+        .close-button {
+            float: right;
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: var(--secondary-color);
+        }
+
+        /* 讀取動畫 */
+        #loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto 0;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 其他元件 */
+        .hidden {
+            display: none !important;
+        }
+
+        #back-button {
+            margin-top: 2rem;
+            padding: 10px 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        #back-button:hover {
+            background-color: #5a6268;
+        }
+
+        /* 動畫效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .action-grid.fade-out {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="main-header">
+            <h1>短影音文案與腳本 AI 智能體</h1>
+            <p>您的創意引擎，一鍵生成爆款內容</p>
+        </header>
+
+        <main id="main-content">
+            <!-- 功能選擇區 -->
+            <div id="action-selector" class="action-grid">
+                <button class="action-card" data-action="copywriting">
+                    <div class="card-icon">✍️</div>
+                    <h3>生成文案</h3>
+                    <p>輸入主題，AI 為您打造吸睛文案</p>
+                </button>
+                <button class="action-card" data-action="scriptwriting">
+                    <div class="card-icon">🎬</div>
+                    <h3>生成腳本</h3>
+                    <p>從文案到分鏡，AI 搞定影片腳本</p>
+                </button>
+                <button class="action-card" data-action="instructions">
+                    <div class="card-icon">ℹ️</div>
+                    <h3>使用說明</h3>
+                    <p>了解如何操作，快速上手</p>
+                </button>
+                <button class="action-card" data-action="contact">
+                    <div class="card-icon">🚀</div>
+                    <h3>我要進階客製化</h3>
+                    <p>填寫表單，打造您的專屬 AI</p>
+                </button>
+            </div>
+
+            <!-- 結果顯示區 -->
+            <div id="result-container" class="hidden">
+                <!-- 動態內容會插入到這裡 -->
+            </div>
+            
+            <!-- 返回按鈕 -->
+            <button id="back-button" class="hidden">返回主選單</button>
+        </main>
+    </div>
+
+    <!-- 主題輸入彈出視窗 -->
+    <div id="topic-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>請輸入您的主題</h2>
+            <p id="modal-prompt">您希望 AI 針對什麼主題來創作？</p>
+            <input type="text" id="topic-input" placeholder="例如：如何成為一名優秀的內容創作者">
+            <button id="submit-topic">立即生成</button>
+            <div id="loading-spinner" class="hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM 元素獲取
+            const actionSelector = document.getElementById('action-selector');
+            const resultContainer = document.getElementById('result-container');
+            const backButton = document.getElementById('back-button');
+            const modal = document.getElementById('topic-modal');
+            const closeModalButton = document.querySelector('.close-button');
+            const submitTopicButton = document.getElementById('submit-topic');
+            const topicInput = document.getElementById('topic-input');
+            const loadingSpinner = document.getElementById('loading-spinner');
+
+            let currentAction = '';
+
+            // 點擊事件監聽
+            actionSelector.addEventListener('click', (e) => {
+                const card = e.target.closest('.action-card');
+                if (!card) return;
+                currentAction = card.dataset.action;
+
+                if (currentAction === 'copywriting' || currentAction === 'scriptwriting') {
+                    openModal();
+                } else if (currentAction === 'instructions') {
+                    showResult(getInstructionsContent());
+                } else if (currentAction === 'contact') {
+                    showResult(getContactContent());
+                }
+            });
+
+            // 顯示結果
+            function showResult(content) {
+                actionSelector.classList.add('fade-out');
+                setTimeout(() => {
+                    actionSelector.classList.add('hidden');
+                    resultContainer.innerHTML = content;
+                    resultContainer.classList.remove('hidden');
+                    backButton.classList.remove('hidden');
+                }, 500);
+            }
+
+            // 返回主選單
+            backButton.addEventListener('click', () => {
+                resultContainer.classList.add('hidden');
+                backButton.classList.add('hidden');
+                actionSelector.classList.remove('hidden');
+                actionSelector.classList.remove('fade-out');
+            });
+
+            // Modal 相關功能
+            function openModal() { modal.classList.remove('hidden'); }
+            function closeModal() {
+                modal.classList.add('hidden');
+                loadingSpinner.classList.add('hidden');
+                submitTopicButton.classList.remove('hidden');
+                topicInput.value = '';
+            }
+            closeModalButton.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+            // ==================================================
+            // === ✨ 核心修改：從呼叫模擬資料到呼叫真實 AI API ===
+            // ==================================================
+            submitTopicButton.addEventListener('click', async () => {
+                const topic = topicInput.value.trim();
+                if (!topic) {
+                    alert('請輸入一個主題！');
+                    return;
+                }
+
+                loadingSpinner.classList.remove('hidden');
+                submitTopicButton.classList.add('hidden');
+
+                try {
+                    // 發送請求到我們的後端伺服器
+                    const response = await fetch('http://127.0.0.1:5001/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            topic: topic,
+                            action: currentAction
+                        } ),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || '伺服器發生錯誤');
+                    }
+
+                    const data = await response.json();
+                    
+                    closeModal();
+                    showResult(formatAIResponse(data.result, topic));
+
+                } catch (error) {
+                    console.error('請求失敗:', error);
+                    alert('AI 服務請求失敗：' + error.message);
+                    closeModal();
+                }
+            });
+
+            // 新增：將 AI 回應的 Markdown 文本格式化為 HTML
+            function formatAIResponse(text, topic) {
+                // 使用正則表達式將 Markdown 轉換為 HTML
+                let html = text
+                    .replace(/### (.*)/g, '<h3>$1</h3>') // 轉換 ### 標題
+                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>') // 轉換 **粗體**
+                    .replace(/^- (.*)/gm, '<li>$1</li>'); // 轉換 - 列表項
+
+                // 處理連續的 li 標籤，將它們包裹在 ul 中
+                html = html.replace(/<\/li>\s*<li>/g, '</li><li>');
+                const listItems = html.match(/<li>.*?<\/li>/gs);
+                if (listItems) {
+                    html = html.replace(listItems.join(''), `<ul>${listItems.join('')}</ul>`);
+                }
+                
+                return `<div class="result-section"><h2>主題：${topic}</h2></div><div class="result-section">${html}</div>`;
+            }
+
+            // 靜態內容函數
+            function getInstructionsContent() {
+                return `
+                    <div class="result-section">
+                        <h2>AI 文案與腳本助手使用說明</h2>
+                        <ul>
+                            <li><strong>✍️ 生成文案：</strong>點擊後，輸入您想要的文案主題，AI 將會為您生成「文案架構」、「完整文案」和「A/B測試素材」。</li>
+                            <li><strong>🎬 生成腳本：</strong>點擊後，輸入您想要的腳本主題，AI 將會為您生成一份包含畫面、聲音和字幕的完整短影音腳本。</li>
+                            <li><strong>🚀 我要進階客製化：</strong>如果您希望擁有客製化的 AI 解決方案，點擊此按鈕將引導您填寫需求問卷，我們將有專人與您聯繫。</li>
+                        </ul>
+                        <p>隨時可以點擊主選單，重新開始使用服務！</p>
+                    </div>
+                `;
+            }
+
+            function getContactContent() {
+                return `
+                    <div class="result-section">
+                        <h2>打造您的專屬 AI 助手</h2>
+                        <p>感謝您的興趣！為了更深入了解您的需求，請點擊下方按鈕，花幾分鐘填寫一份簡短的問卷，我們的專家將會親自與您聯繫。</p>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSc_..." target="_blank" class="button-link">前往填寫需求問卷</a>
+                    </div>
+                    <style>.button-link{display:inline-block;padding:10px 20px;background:var(--primary-color );color:white;text-decoration:none;border-radius:8px;margin-top:1rem;}</style>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
